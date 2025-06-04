@@ -1,9 +1,12 @@
+import os
 import sqlite3
 import hashlib
 from datetime import datetime
 
 # 连接到 SQLite 数据库（如果不存在则会自动创建）
-conn = sqlite3.connect("users.db")
+db_path="users/users.db"
+os.makedirs(os.path.dirname(db_path), exist_ok=True)
+conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
 # 创建统一用户表

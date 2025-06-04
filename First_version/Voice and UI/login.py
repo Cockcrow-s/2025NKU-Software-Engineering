@@ -1,6 +1,12 @@
 # login.py
+import sys
+import os
+
 from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox
 from PyQt5.QtCore import pyqtSignal
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'System_management')))
+from user_info import User
 
 class LoginWindow(QWidget):
     # 定义登录成功信号
@@ -30,11 +36,18 @@ class LoginWindow(QWidget):
         self.setLayout(layout)
 
     def handleLogin(self):
-        user = self.edit_user.text()
-        pw = self.edit_pass.text()
-        # 修改为真实登录逻辑
-        if user == "admin" and pw == "123":
-            self.login_success.emit()  # 发出登录成功信号
+        username = self.edit_user.text().strip()
+        password = self.edit_pass.text().strip()
+
+        if not username or not password:
+            QMessageBox.warning(self, "输入错误", "请输入用户名和密码")
+            return
+
+        user = User(username, password)
+        if user.login():
+            QMessageBox.information(self, "登录成功", f"欢迎，{username}！")
+            self.main_window = MainWindow()
+            self.main_window.show()
             self.close()
         else:
-            QMessageBox.warning(self, "错误", "用户名或密码错误")
+            QMessageBox.warning(self, "登录失败", "用户名或密码错误！")

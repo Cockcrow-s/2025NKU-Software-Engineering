@@ -68,8 +68,7 @@ class LoginWindow(QWidget):
         user = User(username, password)
         if user.login():
             QMessageBox.information(self, "登录成功", f"欢迎，{username}！")
-            # self.main_window = MainWindow()
-            # self.main_window.show()
+            self.login_success.emit()
             self.close()
         else:
             QMessageBox.warning(self, "登录失败", "用户名或密码错误！")

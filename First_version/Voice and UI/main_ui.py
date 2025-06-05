@@ -135,7 +135,7 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "天气", "天气功能暂未实现")
 
     def openSettings(self):
-        self.settings_window = SettingsWindow(self.user)
+        self.settings_window = SettingsWindow(self.user, self)
         self.settings_window.show()
 
     def openSystem(self):
@@ -148,3 +148,11 @@ class MainWindow(QMainWindow):
         else:
             self.warning_icon.show()
         self.blink_state = not self.blink_state
+
+    def set_background(self, image_path):
+        normalized_path = os.path.normpath(image_path).replace("\\", "/")
+        self.centralWidget().setStyleSheet(f"""
+            QWidget {{
+                border-image: url("{normalized_path}") 0 0 0 0 stretch stretch;
+            }}
+        """)

@@ -112,6 +112,24 @@ class User:
             print(f"用户 {self.username} 不存在，无法查询注册时间！")
             return None
 
+    def change_username(self, new_username):
+        # 检查新用户名是否已存在
+        cursor.execute("SELECT * FROM users WHERE username = ?", (new_username,))
+        if cursor.fetchone():
+            print(f"新用户名 {new_username} 已存在，请选择其他用户名！")
+            return False
+
+        # 执行更新操作
+        cursor.execute('''
+            UPDATE users SET username = ? WHERE username = ?
+        ''', (new_username, self.username))
+        conn.commit()
+
+        # 同步更新实例中的用户名
+        print(f"用户名已从 {self.username} 修改为 {new_username}！")
+        self.username = new_username
+        return True
+
 # 子类角色（继承自 User，仅设定默认角色名）
 class Admin(User):
     def __init__(self, username, password):

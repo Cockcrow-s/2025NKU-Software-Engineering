@@ -23,6 +23,7 @@ from gesture_thread import GestureThread
 from face_thread import FaceThread
 from music_window import MusicWindow
 
+from system_ui import SystemManagementWindow  # 引入系统管理界面
 from settings_ui import SettingsWindow  # 导入设置界面
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'System_management')))
@@ -99,13 +100,14 @@ class MainWindow(QMainWindow):
 
         # 系统管理按钮
         # 系统管理待完善
-        btn_system = QToolButton()
-        btn_system.setIcon(QIcon("resources/icons/settings.png"))
-        btn_system.setIconSize(QSize(64, 64))
-        btn_system.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
-        btn_system.setText("系统管理")
-        btn_system.clicked.connect(self.openSystem)
-        icons_layout.addWidget(btn_system)
+        if user.role == "admin":
+            btn_system = QToolButton()
+            btn_system.setIcon(QIcon("resources/icons/settings.png"))
+            btn_system.setIconSize(QSize(64, 64))
+            btn_system.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+            btn_system.setText("系统管理")
+            btn_system.clicked.connect(self.openSystem)
+            icons_layout.addWidget(btn_system)
 
         icons_widget.setLayout(icons_layout)
         scroll_area.setWidget(icons_widget)
@@ -137,11 +139,8 @@ class MainWindow(QMainWindow):
         self.settings_window.show()
 
     def openSystem(self):
-        sys_window = QMainWindow()
-        sys_window.setWindowTitle("系统管理")
-        sys_window.setFixedSize(400, 300)
-        sys_window.show()
-        self.sys_window = sys_window
+        self.system_management_window = SystemManagementWindow(self.user)
+        self.system_management_window.show()
 
     def blinkWarning(self):
         if self.blink_state:

@@ -145,6 +145,23 @@ class Admin(User):
             return False
         return User.delete_user_by_username(username)
 
+    def get_all_users_info(self):
+        """获取所有用户（不包含密码）信息"""
+        cursor.execute('''
+            SELECT username, role, register_time, last_used_time FROM users
+        ''')
+        users = cursor.fetchall()
+        user_info_list = []
+        for user in users:
+            user_info = {
+                "username": user[0],
+                "role": user[1],
+                "register_time": user[2],
+                "last_used_time": user[3]
+            }
+            user_info_list.append(user_info)
+        return user_info_list
+
 class Mechanic(User):
     def __init__(self, username, password):
         super().__init__(username, password, role="mechanic")

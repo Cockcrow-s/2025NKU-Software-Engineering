@@ -14,7 +14,7 @@ from user_info import User,initialize_user_database
 
 class LoginWindow(QWidget):
     # 定义登录成功信号
-    login_success = pyqtSignal()
+    login_success = pyqtSignal(object)
 
     def __init__(self):
         super().__init__()
@@ -68,7 +68,7 @@ class LoginWindow(QWidget):
         user = User(username, password)
         if user.login():
             QMessageBox.information(self, "登录成功", f"欢迎，{username}！")
-            self.login_success.emit()
+            self.login_success.emit(user)
             self.close()
         else:
             QMessageBox.warning(self, "登录失败", "用户名或密码错误！")

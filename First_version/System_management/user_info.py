@@ -90,6 +90,28 @@ class User:
         print("密码修改成功！")
         return True
 
+    def delete_user_by_username(username):
+        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+        user = cursor.fetchone()
+        if not user:
+            print(f"用户 {username} 不存在，无法注销！")
+            return False
+
+        cursor.execute("DELETE FROM users WHERE username = ?", (username,))
+        conn.commit()
+        print(f"用户 {username} 注销成功！")
+        return True
+        
+    def get_register_time(self):
+        cursor.execute("SELECT register_time FROM users WHERE username = ?", (self.username,))
+        result = cursor.fetchone()
+        if result:
+            print(f"用户 {self.username} 的注册时间为：{result[0]}")
+            return result[0]
+        else:
+            print(f"用户 {self.username} 不存在，无法查询注册时间！")
+            return None
+
 # 子类角色（继承自 User，仅设定默认角色名）
 class Admin(User):
     def __init__(self, username, password):
@@ -98,6 +120,12 @@ class Admin(User):
     def add_user(self, username, password, role):
         new_user = User(username, password, role)
         new_user.register()
+
+    def delete_user(self, username):
+        if username == self.username:
+            print("管理员不能注销自己！")
+            return False
+        return User.delete_user_by_username(username)
 
 class Mechanic(User):
     def __init__(self, username, password):

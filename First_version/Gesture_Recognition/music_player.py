@@ -4,17 +4,25 @@ from PyQt5.QtCore import QUrl
 # import state
 
 class MusicPlayer:
+    def add_to_playlist(self, file_path):
+        """
+        添加新音乐到播放列表：
+        - 传入文件路径，添加到当前播放列表的末尾。
+        """
+        url = QUrl.fromLocalFile(file_path)
+        self.playlist.addMedia(QMediaContent(url))
+
+
     def __init__(self, music_dir='music'):
         # 创建播放器和播放列表
         self.player = QMediaPlayer()
         self.playlist = QMediaPlaylist()    
 
-        # 加载 music_dir 目录下的所有音频文件
-        for filename in os.listdir(music_dir):
-            if filename.lower().endswith(('.mp3', '.wav', '.ogg', '.flac')):
-                file_path = os.path.join(music_dir, filename)
-                url = QUrl.fromLocalFile(file_path)
-                self.playlist.addMedia(QMediaContent(url))
+        # # 加载 music_dir 目录下的所有音频文件
+        # for filename in os.listdir(music_dir):
+        #     if filename.lower().endswith(('.mp3', '.wav', '.ogg', '.flac')):
+        #         file_path = os.path.join(music_dir, filename)
+        #         self.add_to_playlist(file_path)
 
         # 设置播放列表的初始索引和循环模式
         self.playlist.setCurrentIndex(0)
@@ -23,9 +31,9 @@ class MusicPlayer:
         # 将播放列表绑定到播放器
         self.player.setPlaylist(self.playlist)
 
-    def load(music_dir='music'):
-        url = QUrl.fromLocalFile(file_path)
-        self.playlist.addMedia(QMediaContent(url))
+    # def load(music_dir='music'):
+    #     url = QUrl.fromLocalFile(music_dir)
+    #     self.playlist.addMedia(QMediaContent(url))
         
     def play(self):
         """
@@ -50,8 +58,49 @@ class MusicPlayer:
         # state.is_playing = False
         self.playlist.setCurrentIndex(0)
     
-    #def next():待实现
+    def next(self):
+        """
+        跳转到下一首音乐：
+        - 如果当前是最后一首，则循环回到第一首。
+        """
+        if self.playlist.currentIndex() < self.playlist.mediaCount() - 1:
+            self.playlist.next()
+        else:
+            self.playlist.setCurrentIndex(0)
+        self.player.play()
         
-    #def previous():待实现
+    def previous(self):
+        """
+        跳转到上一首音乐：
+        - 如果当前是第一首，则循环回到最后一首。
+        """
+        if self.playlist.currentIndex() > 0:
+            self.playlist.previous()
+        else:
+            self.playlist.setCurrentIndex(self.playlist.mediaCount() - 1)
+        self.player.play()
         
+    def get_duration(self):
+        return self.player.duration()
+    
+    def change_volume(self, volume):
+        """
+        调整音量：
+        - volume: 0-100 的整数，表示音量百分比。
+        """
+        self.player.setVolume(volume)
+
+    def change_position(self, position):
+        """
+        跳转到指定位置：
+        - position: 以毫秒为单位的时间戳。
+        """
+        self.player.setPosition(position)
+
+    def get_process(self):
+        """
+        获取当前播放进度：
+        - 返回当前播放位置的毫秒数。
+        """
+        return self.player.position()
 

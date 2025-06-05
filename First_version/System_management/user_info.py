@@ -3,6 +3,8 @@ import sqlite3
 import hashlib
 from datetime import datetime
 
+from interaction_logger import InteractionLogger
+
 # 连接到 SQLite 数据库（如果不存在则会自动创建）
 db_path="users/users.db"
 os.makedirs(os.path.dirname(db_path), exist_ok=True)
@@ -29,6 +31,7 @@ class User:
         self.username = username
         self.password = password
         self.role = role
+        self.logger = InteractionLogger()  # 添加日志管理器
 
     def register(self):
         hashed_password = hashlib.sha256(self.password.encode()).hexdigest()
@@ -129,6 +132,16 @@ class User:
         print(f"用户名已从 {self.username} 修改为 {new_username}！")
         self.username = new_username
         return True
+
+    def log_interaction(self, modality, input_data, system_response):
+        """用户记录一条交互日志"""
+        self.logger.log_interaction(self.username, modality, input_data, system_response)
+
+    def get_logs(self):
+        return self.logger.read_logs(self.username)
+
+    def get_log_stats(self):
+        return self.logger.generate_statistics(self.username)
 
 # 子类角色（继承自 User，仅设定默认角色名）
 class Admin(User):

@@ -1,14 +1,21 @@
 # settings_ui.py
+import os
+import shutil
+
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QPushButton, QLabel,
-    QHBoxLayout, QVBoxLayout, QStackedWidget, QLineEdit, QMessageBox
+    QHBoxLayout, QVBoxLayout, QStackedWidget, QLineEdit, QMessageBox,
+    QTableWidget, QTableWidgetItem, QScrollArea, QHeaderView, QFileDialog
 )
 from PyQt5.QtCore import Qt
+from PyQt5.QtChart import QChart, QChartView, QBarSeries, QBarSet, QBarCategoryAxis
+from PyQt5.QtGui import QPainter, QPixmap, QPalette, QBrush
 
 class SettingsWindow(QMainWindow):
-    def __init__(self,user):
+    def __init__(self,user, main_window=None):
         super().__init__()
         self.user = user
+        self.main_window = main_window  # 保存主界面引用
         self.setWindowTitle("系统设置")
         self.setGeometry(150, 150, 600, 400)
 
@@ -42,8 +49,8 @@ class SettingsWindow(QMainWindow):
         # 右侧功能区域（StackedWidget）
         self.stack = QStackedWidget()
         self.stack.addWidget(self.create_account_page())
-        self.stack.addWidget(self.create_placeholder_page("个性化设置界面"))
-        self.stack.addWidget(self.create_placeholder_page("日志界面"))
+        self.stack.addWidget(self.create_personalization_page())
+        self.stack.addWidget(self.create_logs_page())
         self.stack.addWidget(self.create_placeholder_page("系统更新界面"))
 
         # 将左右部分加入主布局
@@ -194,3 +201,97 @@ class SettingsWindow(QMainWindow):
     def back_to_info(self):
         self.edit_widget.hide()
         self.info_widget.show()
+
+    def create_logs_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+
+        # === 顶部模态统计部分 ===
+        stats = self.user.logger.generate_statistics(self.user.username)
+        if stats:
+            bar_set = QBarSet("使用次数")
+            categories = list(stats.keys())
+            for key in categories:
+                bar_set << stats[key]
+
+            series = QBarSeries()
+            series.append(bar_set)
+
+            chart = QChart()
+            chart.addSeries(series)
+            chart.setTitle("模态使用统计")
+            chart.setAnimationOptions(QChart.SeriesAnimations)
+
+            axisX = QBarCategoryAxis()
+            axisX.append(categories)
+            chart.addAxis(axisX, Qt.AlignBottom)
+            series.attachAxis(axisX)
+
+            chart_view = QChartView(chart)
+            chart_view.setRenderHint(QPainter.Antialiasing)
+            chart_view.setFixedHeight(250)
+            layout.addWidget(chart_view)
+        else:
+            layout.addWidget(QLabel("暂无日志统计"))
+
+        # === 下方日志表格部分 ===
+        logs = self.user.logger.read_logs(self.user.username)
+
+        log_table = QTableWidget()
+        log_table.setColumnCount(4)
+        log_table.setHorizontalHeaderLabels(["时间", "模态", "输入内容", "系统响应"])
+        log_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        log_table.setRowCount(len(logs))
+
+        for i, log in enumerate(logs):
+            for j, value in enumerate(log):
+                item = QTableWidgetItem(str(value))
+                item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                log_table.setItem(i, j, item)
+
+        log_table.setMinimumHeight(300)
+        log_table.setAlternatingRowColors(True)
+        layout.addWidget(log_table)
+
+        return page
+
+    def create_personalization_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+
+        label = QLabel("选择一张背景图片以自定义主界面背景：")
+        label.setAlignment(Qt.AlignCenter)
+
+        self.preview_label = QLabel("背景预览区域")
+        self.preview_label.setAlignment(Qt.AlignCenter)
+        self.preview_label.setFixedHeight(200)
+        self.preview_label.setStyleSheet("border: 1px solid gray;")
+
+        btn_select = QPushButton("选择图片")
+        btn_select.clicked.connect(self.select_background_image)
+
+        layout.addWidget(label)
+        layout.addWidget(self.preview_label)
+        layout.addWidget(btn_select)
+
+        return page
+
+    def select_background_image(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "选择背景图片", "", "Images (*.png *.jpg *.bmp)")
+        if file_path:
+            # 保存到 resources 目录下
+            save_path = os.path.join("resources", os.path.basename(file_path))
+            os.makedirs("resources", exist_ok=True)
+            shutil.copy(file_path, save_path)
+
+            # 设置预览图
+            self.preview_label.setPixmap(QPixmap(save_path).scaled(
+                self.preview_label.width(),
+                self.preview_label.height(),
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation
+            ))
+
+            # 通知主界面更换背景
+            if self.main_window and hasattr(self.main_window, "set_background"):
+                self.main_window.set_background(save_path)

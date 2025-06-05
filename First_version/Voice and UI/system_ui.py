@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'S
 from user_info import Admin, initialize_user_database, close_connection
 
 
-class AdminWindow(QWidget):
+class SystemManagementWindow(QWidget):
     def __init__(self,user):
         super().__init__()
         self.setWindowTitle("系统管理界面")
@@ -148,13 +148,3 @@ class AdminWindow(QWidget):
             self.log_area.setText(log_str)
         else:
             QMessageBox.warning(self, "操作失败", "请选择一个用户！")
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    user=Admin("admin", "admin123")  # 创建一个默认的管理员账号
-    initialize_user_database()
-    admin_window = AdminWindow(user)
-    admin_window.show()
-    sys.exit(app.exec_())
-    close_connection()

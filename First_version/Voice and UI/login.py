@@ -67,6 +67,8 @@ class LoginWindow(QWidget):
 
         user = User(username, password)
         if user.login():
+            if user.role == "admin":
+                user = Admin(username, password)
             QMessageBox.information(self, "登录成功", f"欢迎，{username}！")
             self.login_success.emit(user)
             self.close()

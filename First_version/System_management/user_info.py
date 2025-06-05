@@ -151,7 +151,8 @@ class Admin(User):
     def add_user(self, username, password, role):
         new_user = User(username, password, role)
         new_user.register()
-
+    def get_logs_by_name(self,name):
+        return self.logger.read_logs(name)
     def delete_user(self, username):
         if username == self.username:
             print("管理员不能注销自己！")

@@ -1,3 +1,6 @@
+import sys
+import os
+
 from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QToolButton, QFileDialog, QMessageBox, QPushButton
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, QTimer, QSize, QUrl
@@ -20,10 +23,15 @@ from gesture_thread import GestureThread
 from face_thread import FaceThread
 from music_window import MusicWindow
 
+from settings_ui import SettingsWindow  # 导入设置界面
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'System_management')))
+from user_info import User,initialize_user_database
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self,user):
         super().__init__()
+        self.user = user
         self.setWindowTitle("车载多模态智能交互系统")
         self.setFixedSize(1024, 600)
         self.music_player = MusicPlayer()
@@ -125,7 +133,8 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "天气", "天气功能暂未实现")
 
     def openSettings(self):
-        QMessageBox.information(self, "设置", "设置功能暂未实现")
+        self.settings_window = SettingsWindow(self.user)
+        self.settings_window.show()
 
     def openSystem(self):
         sys_window = QMainWindow()

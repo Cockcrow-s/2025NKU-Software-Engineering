@@ -2,13 +2,69 @@ import sys
 import os
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
-    QPushButton, QLineEdit, QLabel, QMessageBox, QHeaderView, QAbstractItemView,QComboBox
+    QPushButton, QLineEdit, QLabel, QMessageBox, QHeaderView, QAbstractItemView,QComboBox,
+    QDialog, QScrollArea
 )
+from PyQt5.QtChart import QChartView, QChart, QBarSeries, QBarSet, QBarCategoryAxis
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QPainter
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'System_management')))
 from user_info import Admin, initialize_user_database, close_connection
 
+class LogViewerDialog(QDialog):
+    def __init__(self, username, logger, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(f"{username} 的日志记录")
+        self.resize(800, 600)
+
+        layout = QVBoxLayout(self)
+
+        # === 顶部模态统计图 ===
+        stats = logger.generate_statistics(username)
+        if stats:
+            bar_set = QBarSet("使用次数")
+            categories = list(stats.keys())
+            for key in categories:
+                bar_set << stats[key]
+
+            series = QBarSeries()
+            series.append(bar_set)
+
+            chart = QChart()
+            chart.addSeries(series)
+            chart.setTitle("模态使用统计")
+            chart.setAnimationOptions(QChart.SeriesAnimations)
+
+            axisX = QBarCategoryAxis()
+            axisX.append(categories)
+            chart.addAxis(axisX, Qt.AlignBottom)
+            series.attachAxis(axisX)
+
+            chart_view = QChartView(chart)
+            chart_view.setRenderHint(QPainter.Antialiasing)
+            chart_view.setFixedHeight(250)
+            layout.addWidget(chart_view)
+        else:
+            layout.addWidget(QLabel("暂无模态使用统计"))
+
+        # === 日志表格 ===
+        logs = logger.read_logs(username)
+        log_table = QTableWidget()
+        log_table.setColumnCount(4)
+        log_table.setHorizontalHeaderLabels(["时间", "模态", "输入内容", "系统响应"])
+        log_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        log_table.setRowCount(len(logs))
+
+        for i, log in enumerate(logs):
+            for j, value in enumerate(log):
+                item = QTableWidgetItem(str(value))
+                item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                log_table.setItem(i, j, item)
+
+        log_table.setAlternatingRowColors(True)
+        log_table.setMinimumHeight(300)
+
+        layout.addWidget(log_table)
 
 class SystemManagementWindow(QWidget):
     def __init__(self,user):
@@ -68,11 +124,6 @@ class SystemManagementWindow(QWidget):
         main_layout.addLayout(register_layout)
        
         # 用户日志和操作区域
-        self.log_area = QLabel("用户日志：")
-        self.log_area.setFont(font)
-        self.log_area.setWordWrap(True)
-        self.log_area.setAlignment(Qt.AlignTop)
-
         self.btn_delete = QPushButton("注销用户")
         self.btn_delete.setFont(font)
         self.btn_delete.clicked.connect(self.delete_user)
@@ -85,7 +136,6 @@ class SystemManagementWindow(QWidget):
 
         # 布局
         button_layout = QVBoxLayout()
-        button_layout.addWidget(self.log_area)
         button_layout.addWidget(self.btn_delete)
         button_layout.addWidget(self.btn_view_logs)
         main_layout.addLayout(button_layout)
@@ -143,8 +193,7 @@ class SystemManagementWindow(QWidget):
         selected_row = self.table.currentRow()
         if selected_row >= 0:
             username = self.table.item(selected_row, 0).text()
-            logs = self.admin.get_logs_by_name(username)
-            log_str = "\n".join([f"{log[0]} - {log[1]}: {log[2]} -> {log[3]}" for log in logs])
-            self.log_area.setText(log_str)
+            dialog = LogViewerDialog(username, self.admin.logger, self)
+            dialog.exec_()
         else:
             QMessageBox.warning(self, "操作失败", "请选择一个用户！")

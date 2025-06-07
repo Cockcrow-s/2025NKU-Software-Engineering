@@ -2,8 +2,14 @@ import os
 import sqlite3
 import hashlib
 from datetime import datetime
+import sys
 
-from .interaction_logger import InteractionLogger
+# 添加当前目录到 Python 路径
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
+
+from interaction_logger import InteractionLogger
 
 # 连接到 SQLite 数据库（如果不存在则会自动创建）
 db_path="users/users.db"

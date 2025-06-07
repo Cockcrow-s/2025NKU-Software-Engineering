@@ -49,8 +49,10 @@ class User:
             ''', (self.username, hashed_password, self.role, register_time, None))
             conn.commit()
             print(f"{self.role} {self.username} 注册成功！")
+            return True
         except sqlite3.IntegrityError:
             print(f"{self.role} {self.username} 已存在，请使用其他用户名！")
+            return False
 
     def login(self):
         hashed_password = hashlib.sha256(self.password.encode()).hexdigest()

@@ -3,15 +3,14 @@ import sys
 import os
 
 from PyQt5.QtWidgets import (
-    QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout,
-    QMessageBox
+    QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout,
+    QMessageBox, QFrame, QSpacerItem, QSizePolicy
 )
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtGui import QFont
+from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt5.QtGui import QFont, QIcon, QPixmap, QPalette, QBrush
 
-# 添加父目录到Python路径，以便导入其他模块
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from System_management.user_info import User, Admin, initialize_user_database
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'System_management')))
+from user_info import User, Admin, initialize_user_database
 
 class LoginWindow(QWidget):
     # 定义登录成功信号
@@ -20,7 +19,8 @@ class LoginWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("车载多模态智能交互系统")
-        self.setFixedSize(400, 300)
+        self.setFixedSize(800, 500)
+        self.setWindowIcon(QIcon("resources/login_ico.ico"))
         self.setupUI()
         self.create_database()
         
@@ -29,34 +29,72 @@ class LoginWindow(QWidget):
         initialize_user_database()
 
     def setupUI(self):
-        font = QFont("Arial", 10)  
+        self.set_background("resources/loginbg.jpg")
 
-        # 用户名标签和输入框
-        label_user = QLabel("用户名:")
-        label_user.setFont(font)
+        # 主布局
+        main_layout = QHBoxLayout()
+        main_layout.setContentsMargins(50, 50, 50, 50)
+
+        # 占位空间，让登录框偏右
+        spacer = QSpacerItem(100, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        main_layout.addItem(spacer)
+
+        # 登录面板
+        login_frame = QFrame()
+        login_frame.setFixedSize(300, 350)
+        login_frame.setStyleSheet("background-color: white; border-radius: 10px;")
+        login_layout = QVBoxLayout(login_frame)
+        login_layout.setContentsMargins(30, 30, 30, 30)
+        login_layout.setSpacing(20)
+
+        title = QLabel("账号登录")
+        title.setAlignment(Qt.AlignCenter)
+        title_font = QFont("Arial", 14, QFont.Bold)
+        title.setFont(title_font)
+        login_layout.addWidget(title)
+
+        # 用户名输入
         self.edit_user = QLineEdit()
-        self.edit_user.setFont(font)
+        self.edit_user.setPlaceholderText("请输入用户名")
+        self.edit_user.setFont(QFont("Arial", 10))
+        self.edit_user.setFixedHeight(35)
+        self.edit_user.setStyleSheet("border: 1px solid gray; border-radius: 5px; padding-left: 8px;")
+        login_layout.addWidget(self.edit_user)
 
-        # 密码标签和输入框
-        label_pass = QLabel("密码:")
-        label_pass.setFont(font)
+        # 密码输入
         self.edit_pass = QLineEdit()
+        self.edit_pass.setPlaceholderText("请输入密码")
+        self.edit_pass.setFont(QFont("Arial", 10))
         self.edit_pass.setEchoMode(QLineEdit.Password)
-        self.edit_pass.setFont(font)
+        self.edit_pass.setFixedHeight(35)
+        self.edit_pass.setStyleSheet("border: 1px solid gray; border-radius: 5px; padding-left: 8px;")
+        login_layout.addWidget(self.edit_pass)
 
         # 登录按钮
         btn_login = QPushButton("登录")
-        btn_login.setFont(font)
+        btn_login.setFont(QFont("Arial", 11))
+        btn_login.setFixedHeight(35)
+        btn_login.setStyleSheet("""
+            QPushButton {
+                background-color: #0078D7; color: white; border: none; border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #005A9E;
+            }
+        """)
         btn_login.clicked.connect(self.handleLogin)
+        login_layout.addWidget(btn_login)
 
-        # 布局设置
-        layout = QVBoxLayout()
-        layout.addWidget(label_user)
-        layout.addWidget(self.edit_user)
-        layout.addWidget(label_pass)
-        layout.addWidget(self.edit_pass)
-        layout.addWidget(btn_login)
-        self.setLayout(layout)
+        # 添加登录框到主布局
+        main_layout.addWidget(login_frame)
+        self.setLayout(main_layout)
+
+    def set_background(self, image_path):
+        # 设置背景图
+        palette = QPalette()
+        pixmap = QPixmap(image_path).scaled(self.size(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+        palette.setBrush(QPalette.Window, QBrush(pixmap))
+        self.setPalette(palette)
 
     def handleLogin(self):
         username = self.edit_user.text().strip()

@@ -9,8 +9,9 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QFont
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'System_management')))
-from user_info import User,initialize_user_database
+# 添加父目录到Python路径，以便导入其他模块
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from System_management.user_info import User, Admin, initialize_user_database
 
 class LoginWindow(QWidget):
     # 定义登录成功信号

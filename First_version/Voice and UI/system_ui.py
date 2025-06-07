@@ -8,8 +8,10 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtChart import QChartView, QChart, QBarSeries, QBarSet, QBarCategoryAxis
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QPainter
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'System_management')))
-from user_info import Admin, initialize_user_database, close_connection
+
+# 添加父目录到Python路径，以便导入其他模块
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from System_management.user_info import Admin, initialize_user_database, close_connection
 
 class LogViewerDialog(QDialog):
     def __init__(self, username, logger, parent=None):

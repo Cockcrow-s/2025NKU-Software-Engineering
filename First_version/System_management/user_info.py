@@ -3,7 +3,7 @@ import sqlite3
 import hashlib
 from datetime import datetime
 
-from interaction_logger import InteractionLogger
+from .interaction_logger import InteractionLogger
 
 # 连接到 SQLite 数据库（如果不存在则会自动创建）
 db_path="users/users.db"

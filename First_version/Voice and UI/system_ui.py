@@ -7,11 +7,9 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtChart import QChartView, QChart, QBarSeries, QBarSet, QBarCategoryAxis
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QPainter
-
-# 添加父目录到Python路径，以便导入其他模块
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from System_management.user_info import Admin, initialize_user_database, close_connection
+from PyQt5.QtGui import QFont, QPainter, QIcon
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'System_management')))
+from user_info import Admin, initialize_user_database, close_connection
 
 class LogViewerDialog(QDialog):
     def __init__(self, username, logger, parent=None):
@@ -68,134 +66,151 @@ class LogViewerDialog(QDialog):
 
         layout.addWidget(log_table)
 
+class RegisterUserDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("注册新用户")
+        self.setFixedSize(300, 200)
+        layout = QVBoxLayout()
+
+        self.username_input = QLineEdit()
+        self.username_input.setPlaceholderText("输入用户名")
+        self.password_input = QLineEdit()
+        self.password_input.setPlaceholderText("输入密码")
+        self.password_input.setEchoMode(QLineEdit.Password)
+        
+        role_layout = QHBoxLayout()
+        role_label = QLabel("角色：")
+        self.role_combo = QComboBox()
+        self.role_combo.addItems(["driver", "admin", "mechanic"])
+        role_layout.addWidget(role_label)
+        role_layout.addWidget(self.role_combo)
+
+        btn_layout = QHBoxLayout()
+        self.btn_cancel = QPushButton("取消")
+        self.btn_confirm = QPushButton("确认")
+        btn_layout.addWidget(self.btn_cancel)
+        btn_layout.addWidget(self.btn_confirm)
+
+        layout.addWidget(self.username_input)
+        layout.addWidget(self.password_input)
+        layout.addLayout(role_layout)
+        layout.addLayout(btn_layout)
+
+        self.setLayout(layout)
+
 class SystemManagementWindow(QWidget):
-    def __init__(self,user):
+    def __init__(self, user):
         super().__init__()
         self.setWindowTitle("系统管理界面")
         self.setFixedSize(1000, 750)
-        self.admin =user  # 默认管理员账号
+        self.setWindowIcon(QIcon("resources/sys_ico.ico"))
+        self.admin = user
         self.setupUI()
         self.load_users()
 
     def setupUI(self):
-        font = QFont("Arial", 10)
+        font = QFont("Arial", 11)
 
-        # 用户信息表格
+        title = QLabel("用户信息管理")
+        title.setFont(QFont("Arial", 15, QFont.Bold))
+        title.setAlignment(Qt.AlignLeft)
+
         self.table = QTableWidget()
         self.table.setFont(font)
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["用户名", "角色", "注册时间"])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels(["用户名", "角色", "注册时间", "操作"])
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.table.itemSelectionChanged.connect(self.on_user_selected)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
 
-        # 注册新用户
-        label_new_user = QLabel("新用户名:")
-        label_new_user.setFont(font)
-        self.edit_new_user = QLineEdit()
-        self.edit_new_user.setFont(font)
+        self.btn_register_user = QPushButton("注册新用户")
+        self.btn_register_user.setFont(font)
+        self.btn_register_user.setStyleSheet("""
+            QPushButton {
+                color: black;
+                background-color: white;
+                border: 1px solid gray;
+                padding: 5px 10px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #f0f0f0;
+            }
+        """)
+        self.btn_register_user.setCursor(Qt.PointingHandCursor)
+        self.btn_register_user.clicked.connect(self.show_register_dialog)
 
-        label_new_password = QLabel("新密码:")
-        label_new_password.setFont(font)
-        self.edit_new_password = QLineEdit()
-        self.edit_new_password.setFont(font)
-        self.edit_new_password.setEchoMode(QLineEdit.Password)
-
-        label_new_role = QLabel("角色:")
-        label_new_role.setFont(font)
-        self.combo_new_role = QComboBox()
-        self.combo_new_role.setFont(font)
-        self.combo_new_role.addItems(["driver", "admin", "mechanic"])  # 下拉菜单选项
-
-        btn_register = QPushButton("注册新用户")
-        btn_register.setFont(font)
-        btn_register.clicked.connect(self.register_new_user)
-
-        # 布局
-        register_layout = QVBoxLayout()
-        register_layout.addWidget(label_new_user)
-        register_layout.addWidget(self.edit_new_user)
-        register_layout.addWidget(label_new_password)
-        register_layout.addWidget(self.edit_new_password)
-        register_layout.addWidget(label_new_role)
-        register_layout.addWidget(self.combo_new_role)
-        register_layout.addWidget(btn_register)
-
-        main_layout = QHBoxLayout()
-        main_layout.addWidget(self.table)
-        main_layout.addLayout(register_layout)
-       
-        # 用户日志和操作区域
-        self.btn_delete = QPushButton("注销用户")
-        self.btn_delete.setFont(font)
-        self.btn_delete.clicked.connect(self.delete_user)
-        self.btn_delete.setEnabled(False)
-
-        self.btn_view_logs = QPushButton("查看日志")
-        self.btn_view_logs.setFont(font)
-        self.btn_view_logs.clicked.connect(self.view_logs)
-        self.btn_view_logs.setEnabled(False)
-
-        # 布局
-        button_layout = QVBoxLayout()
-        button_layout.addWidget(self.btn_delete)
-        button_layout.addWidget(self.btn_view_logs)
-        main_layout.addLayout(button_layout)
-        main_layout.setStretchFactor(self.table, 3)  # 
-        main_layout.setStretchFactor(register_layout, 1)  # 
-        main_layout.setStretchFactor(button_layout, 1)
-        self.setLayout(main_layout)
-
+        layout = QVBoxLayout()
+        layout.addWidget(title)
+        layout.addWidget(self.table)
+        layout.addWidget(self.btn_register_user, alignment=Qt.AlignRight)
+        self.setLayout(layout)
 
     def load_users(self):
-        self.table.setRowCount(0)
         users = self.admin.get_all_users_info()
+        self.table.setRowCount(len(users))
         for row, user in enumerate(users):
-            self.table.insertRow(row)
-            self.table.setItem(row, 0, QTableWidgetItem(user["username"]))
-            self.table.setItem(row, 1, QTableWidgetItem(user["role"]))
-            self.table.setItem(row, 2, QTableWidgetItem(user["register_time"]))
-            self.table.setItem(row, 3, QTableWidgetItem("操作"))
+            self.table.setItem(row, 0, QTableWidgetItem(user['username']))
+            self.table.setItem(row, 1, QTableWidgetItem(user['role']))
+            self.table.setItem(row, 2, QTableWidgetItem(user['register_time']))
 
-    def on_user_selected(self):
-        selected_row = self.table.currentRow()
-        if selected_row >= 0:
-            self.btn_delete.setEnabled(True)
-            self.btn_view_logs.setEnabled(True)
+            btn_logs = QPushButton("查看日志")
+            btn_logs.setCursor(Qt.PointingHandCursor)
+            btn_logs.clicked.connect(lambda _, u=user['username']: self.view_logs(u))
+
+            btn_upgrade = QPushButton("推送升级")
+            btn_upgrade.setCursor(Qt.PointingHandCursor)
+            btn_upgrade.clicked.connect(self.notify_unimplemented)
+
+            btn_delete = QPushButton("注销用户")
+            btn_delete.setCursor(Qt.PointingHandCursor)
+            btn_delete.clicked.connect(lambda _, u=user['username']: self.delete_user(u))
+
+            op_layout = QHBoxLayout()
+            op_layout.setContentsMargins(0, 0, 0, 0)
+            op_layout.addWidget(btn_logs)
+            op_layout.addWidget(btn_upgrade)
+            op_layout.addWidget(btn_delete)
+
+            op_widget = QWidget()
+            op_widget.setLayout(op_layout)
+            self.table.setCellWidget(row, 3, op_widget)
+
+    def notify_unimplemented(self):
+        QMessageBox.information(self, "提示", "该功能尚未实现")
+
+    def delete_user(self, username):
+        if self.admin.delete_user(username):
+            QMessageBox.information(self, "注销成功", f"用户 {username} 已注销！")
+            self.load_users()
         else:
-            self.btn_delete.setEnabled(False)
-            self.btn_view_logs.setEnabled(False)
+            QMessageBox.warning(self, "注销失败", f"无法注销用户 {username}！")
 
-    def register_new_user(self):
-        username = self.edit_new_user.text().strip()
-        password = self.edit_new_password.text().strip()
-        role = self.combo_new_role.currentText()  # 从下拉菜单获取角色
-        if not username or not password:
-            QMessageBox.warning(self, "注册失败", "请输入有效的用户名和密码！")
-            return
-        self.admin.add_user(username, password, role)
-        QMessageBox.information(self, "注册成功", f"用户 {username} 注册成功！")
-        self.load_users()
-        self.edit_new_user.clear()
-        self.edit_new_password.clear()
+    def view_logs(self,username):
+        dialog = LogViewerDialog(username, self.admin.logger, self)
+        dialog.exec_()
 
-    def delete_user(self):
-        selected_row = self.table.currentRow()
-        if selected_row >= 0:
-            username = self.table.item(selected_row, 0).text()
-            if self.admin.delete_user(username):
-                QMessageBox.information(self, "注销成功", f"用户 {username} 已注销！")
+    def show_register_dialog(self):
+        dialog = RegisterUserDialog()
+        dialog.btn_cancel.clicked.connect(dialog.reject)
+        dialog.btn_confirm.clicked.connect(lambda: self.register_new_user(dialog))
+        dialog.exec_()
+
+    def register_new_user(self, dialog):
+        username = dialog.username_input.text().strip()
+        password = dialog.password_input.text().strip()
+        role = dialog.role_combo.currentText()
+        if username and password:
+            # 假设 self.admin.register_user 是注册方法
+            if self.admin.add_user(username, password, role):
+                QMessageBox.information(self, "成功", "用户注册成功")
+                dialog.accept()
                 self.load_users()
             else:
-                QMessageBox.warning(self, "注销失败", f"无法注销用户 {username}！")
+                QMessageBox.warning(self, "失败", "用户已存在或格式错误")
         else:
-            QMessageBox.warning(self, "操作失败", "请选择一个用户！")
-
-    def view_logs(self):
-        selected_row = self.table.currentRow()
-        if selected_row >= 0:
-            username = self.table.item(selected_row, 0).text()
-            dialog = LogViewerDialog(username, self.admin.logger, self)
-            dialog.exec_()
-        else:
-            QMessageBox.warning(self, "操作失败", "请选择一个用户！")
+            QMessageBox.warning(self, "失败", "用户名和密码不能为空")

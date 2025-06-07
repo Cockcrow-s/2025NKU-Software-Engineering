@@ -13,6 +13,19 @@ class MusicWindow(QWidget):
         super().__init__()
         self.setWindowTitle("音乐播放")
         self.setFixedSize(600, 800)
+        self.setAutoFillBackground(False)
+
+        # # 设置背景图,文件路径是对的，但是背景图片就是显示不出来。尝试注释了所有的控件也无济于事。
+        # bg_path = os.path.join(os.path.dirname(__file__), "resources", "background", "FlierenBack.jpg").replace("\\", "/")
+        # self.setObjectName("bgWindow") 
+        # self.setStyleSheet(f"""
+        #     QWidget#bgWindow {{
+        #         background-image: url("{bg_path}");
+        #         background-repeat: no-repeat;
+        #         background-position: center;
+        #         background-attachment: fixed;
+        #     }}
+        # """)
 
         # 图标路径
         icon_path = os.path.join(os.path.dirname(__file__), "resources", "icon", "Flieren.ico")      
@@ -101,9 +114,24 @@ class MusicWindow(QWidget):
         self.btn_que.clicked.connect(self.show_list)
         ctrl_layout.addWidget(self.btn_que)
 
+        # 音量调节按钮
+        volume_layout = QHBoxLayout()
+        self.btn_volume = QPushButton("音量调节")
+        self.btn_volume.setFixedSize(100, 30)
+        self.btn_volume.clicked.connect(lambda: self.volume_slider.setVisible(not self.volume_slider.isVisible()))
+        self.volume_slider = QSlider(Qt.Horizontal)
+        self.volume_slider.setFixedSize(100, 30)
+        self.volume_slider.setRange(0, 100)
+        self.volume_slider.setValue(50)  # 默认音量为50%
+        self.volume_slider.setVisible(False)  # 初始隐藏音量滑块
+        self.volume_slider.valueChanged.connect(self.player.change_volume)  # 连接音量变化信号
+        volume_layout.addWidget(self.btn_volume)
+        volume_layout.addWidget(self.volume_slider)
+
         # 添加到主布局
         total_layout.addLayout(music_layout)
         total_layout.addLayout(ctrl_layout)
+        total_layout.addLayout(volume_layout)
 
         # 旋转动画定时器
         self.rotation_timer = QTimer(self)

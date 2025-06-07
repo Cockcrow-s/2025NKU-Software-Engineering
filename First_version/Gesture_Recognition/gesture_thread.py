@@ -18,13 +18,12 @@ import os
 class GestureThread(QThread):
     # 初始化 MediaPipe
     mp_hands = mp.solutions.hands
-    hands = mp_hands.Hands(static_image_mode=False, max_num_hands=1)
     mp_drawing = mp.solutions.drawing_utils
     # 定义手势识别函数
     label_map = {
         0: "Unknown",
         1: "Fist",
-        2: "Thumb Up",
+        2: "Thumb_Up",
         3: "Palm"
     }
     # 加载训练好的模型
@@ -53,7 +52,7 @@ class GestureThread(QThread):
         super().__init__(parent)
         self.palm_count = 0
         self.last_palm_positions = []
-        self.wave_threshold = 30
+        self.wave_threshold = 0.1
         self.required_palm_count = 3  # 需要检测的Palm次数
 
     def is_position_changed(self, current_pos):
@@ -65,8 +64,11 @@ class GestureThread(QThread):
         return distance > self.wave_threshold
 
     def run(self):
+        self.hands = self.mp_hands.Hands(static_image_mode=False, max_num_hands=1)
         cap = cv2.VideoCapture(0)
         self._is_running = True
+        warmup_frames = 5
+        frame_count = 0
         
         try:
             while self._is_running and cap.isOpened():
@@ -77,6 +79,11 @@ class GestureThread(QThread):
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 results = self.hands.process(frame_rgb)
 
+                # 忽略前几帧
+                frame_count += 1
+                if frame_count < warmup_frames:
+                    continue
+                
                 if results.multi_hand_landmarks:
                     for hand_landmarks in results.multi_hand_landmarks:
                         self.mp_drawing.draw_landmarks(
@@ -112,43 +119,60 @@ class GestureThread(QThread):
                             self._is_running = False
                             break
 
-                        # 显示信息
-                        cv2.putText(frame, f"Gesture: {gesture_name}", (10, 30),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                        # # 显示信息
+                        # cv2.putText(frame, f"Gesture: {gesture_name}", (10, 30),
+                        #             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-                cv2.imshow("Gesture Recognition", frame)
+                # cv2.imshow("Gesture Recognition", frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     self.gesture_detected.emit("user_quit")  # 用户主动退出
                     break
                 
         finally:
             cap.release()
-            cv2.destroyAllWindows()
+            try:
+                self.hands.close()
+            except ValueError:
+                pass
+            # cv2.destroyAllWindows()
 
-def main():
-    # 必须使用 QApplication
-    app = QApplication(sys.argv)
+
+    def stop(self):
+        """停止手势识别线程"""
+        try:
+            self.hands.close()
+        except ValueError:
+            pass
+
+        
+
+# def main():
+#     # 必须使用 QApplication
+#     app = QApplication(sys.argv)
     
-    try:
-        # 检查模型是否存在
-        if not os.path.exists('./model/gesture.joblib'):
-            raise FileNotFoundError("模型文件不存在")
+#     try:
+#         # 检查模型是否存在
+#         if not os.path.exists('./model/gesture.joblib'):
+#             raise FileNotFoundError("模型文件不存在")
             
-        thread = GestureThread()
+#         thread = GestureThread()
         
-        # 添加调试输出
-        print("正在启动手势识别线程...")
+#         # 添加调试输出
+#         print("正在启动手势识别线程...")
         
-        def handle_gesture(message):
-            print(f"接收到手势信号: {message}")
-            app.quit()
+#         def handle_gesture(message):
+#             print(f"接收到手势信号: {message}")
+#             app.quit()
             
-        thread.gesture_detected.connect(handle_gesture)
-        thread.start()
+#         thread.gesture_detected.connect(handle_gesture)
+#         thread.start()
         
-        print("程序已启动，等待手势识别...")
-        sys.exit(app.exec_())
+#         print("程序已启动，等待手势识别...")
+#         sys.exit(app.exec_())
         
-    except Exception as e:
-        print(f"程序启动失败: {e}")
-        sys.exit(1)
+#     except Exception as e:
+#         print(f"程序启动失败: {e}")
+#         sys.exit(1)
+
+# if __name__ == '__main__':
+#     main()

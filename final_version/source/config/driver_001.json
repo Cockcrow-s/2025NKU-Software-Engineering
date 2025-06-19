@@ -1,0 +1,11 @@
+{
+    "user_id": "driver_001",
+    "preferred_language": "en-US",
+    "custom_commands": {
+        "打开空调": "ac_on",
+        "播放音乐": "play_music",
+        "导航回家": "navigate_home",
+        "打开天窗": "sunroof_open"
+    },
+    "confirmation_method": "voice_and_gesture"
+}
